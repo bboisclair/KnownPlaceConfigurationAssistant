@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Known Places Configuration Assistant</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <style>
+        body {
+            background-color: #005151;
+            color: white;
+        }
+        .map {
+            height: 475px;
+            width: 100%;
+        }
+        .coordinates {
+            padding: 10px;
+            font-weight: bold;
+        }
+        #howto {
+            padding: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+ <!-- changelog 
+Created By: Brandon Boisclair (brandon.boisclair@ukg.com)
+v1.0 - Initial Release
+-->
+
+    <h1>UKG Pro WFM - Known Places Configuration Assistant</h1>
+    <br>
+    <div id="map" class="map"></div>
+    <br>
+    <div id="coordinates" class="coordinates">Latitude: <span id="latitude"></span>, Longitude: <span id="longitude"></span></div>
+    <div>
+        <label for="radius">Radius (meters):</label>
+        <input type="number" id="radius" value="50" />
+        <button id="minus">-</button>
+        <button id="plus">+</button>
+    </div>
+    <div id="howto">
+        How To:
+        <ol>
+            <li>Enter an address in the search box above and press Enter</li>
+            <li>Set desired zoom level</li>
+            <li>Click middle of desired Known Place</li>
+            <li>Increase / Decrease Radius with + & - buttons</li>
+            <li>Utilize Latitude, Longitude & Raidus to program Known Place</li>
+        </ol>
+    </div>
+    <script>
+        googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        openStreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        });
+
+        var newMap = L.map('map', {
+            center: [42.614689, -71.324092],
+            zoom: 15,
+            layers: [googleSat, openStreet]
+        });
+
+        var baseMaps = {
+            "Google Satellite": googleSat,
+            "Open Street Map": openStreet
+        };
+
+        var circle = null; // Variable to hold the circle layer
+
+        L.Control.geocoder({ position: 'topleft', collapsed: false, placeholder: "Enter an address..." }).on('markgeocode', function (e) {
+            var latlng = e.geocode.center;
+            var latitudeElement = document.getElementById("latitude");
+            var longitudeElement = document.getElementById("longitude");
+            latitudeElement.textContent = latlng.lat.toFixed(6);
+            longitudeElement.textContent = latlng.lng.toFixed(6);
+            drawCircle(latlng.lat, latlng.lng);
+        }).addTo(newMap);
+
+        L.control.layers(baseMaps).addTo(newMap);
+
+        // Zoom control options
+        var zoomOptions = {
+            zoomInText: '+',
+            zoomOutText: '-',
+        };
+
+        // Creating Zoom control
+        var zoom = L.control.zoom(zoomOptions);
+
+        // Creating scale control
+        var scale = L.control.scale();
+
+        // Adding scale control to the map
+        scale.addTo(newMap);
+
+        newMap.on('click', function (e) {
+            var latitudeElement = document.getElementById("latitude");
+            var longitudeElement = document.getElementById("longitude");
+            latitudeElement.textContent = e.latlng.lat.toFixed(6);
+            longitudeElement.textContent = e.latlng.lng.toFixed(6);
+            drawCircle(e.latlng.lat, e.latlng.lng);
+        });
+
+        document.getElementById("minus").addEventListener("click", function () {
+            adjustRadius(-5);
+        });
+
+        document.getElementById("plus").addEventListener("click", function () {
+            adjustRadius(5);
+        });
+
+        function drawCircle(lat, lng) {
+            var radius = document.getElementById("radius").value;
+            if (!radius) {
+                return;
+            }
+
+            if (circle) {
+                newMap.removeLayer(circle); // Remove the previous circle
+            }
+
+            circle = L.circle([lat, lng], {
+                color: 'blue',
+                fillColor: 'blue',
+                fillOpacity: 0.2,
+                radius: radius
+            }).addTo(newMap);
+        }
+
+        function adjustRadius(value) {
+            var radiusInput = document.getElementById("radius");
+            var newRadius = parseInt(radiusInput.value) + value;
+            if (newRadius >= 0) {
+                radiusInput.value = newRadius;
+                if (circle) {
+                    drawCircle(circle.getLatLng().lat, circle.getLatLng().lng);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,161 +1,371 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Known Places Configuration Assistant</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <style>
-        body {
-            background-color: #005151;
-            color: white;
-        }
-        .map {
-            height: 475px;
-            width: 100%;
-        }
-        .coordinates {
-            padding: 10px;
-            font-weight: bold;
-        }
-        #howto {
-            padding: 10px;
-            font-style: italic;
-        }
-    </style>
+<title>Geolocation Circle Plotter</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>  
+
+<style>
+
+.map {
+  height: 75vh;
+  width: 90vw;
+  display: flex;
+}
+.form{
+	width: 100vw;
+	display: flex;
+}
+
+.body{
+	height: 100vh;
+	width: 100vw;
+}
+
+table, td {
+  border: 1px solid black;
+}
+</style>
+
 </head>
 <body>
+<!-- changelog 
+Created By: Jake Snow (Jake.Snow@ukg.com)
+v1 - Release
+v1.1 - Fix Long and Lat switching on Leaflet API calls.
+v1.2 - Add Google Satelite overview, Added Color in Table, added location searching with Magnifying glass in map.
+v1.3 10/26/22 - Added View location button to Table to change view to specific location.
+v1.4 09/28/2023 - Added option to paste geolocation strings from Dataview Entity.
 
- <!-- changelog 
-Created By: Brandon Boisclair (brandon.boisclair@ukg.com)
-v1.0 - Initial Release
 -->
+<div id="formEntry" class="form">
+<form id="entryMenu" action="">
+  <label for="DVgeo">Geolocation String:</label>
+  <input type="text" id="DVgeo" name="DVgeo" value="42.614689, -71.324092, 30">
+  <input type="button" value="View" onclick="importDV()">
+  <input type="button" value="Add As Circle" onclick="importDVQ()"><br>
+  <label>Select Color and add note prior to adding a geolocation string as a Circle.</label><br><br>
+  
+  <label for="kgslat">latitude:</label>
+  <input type="number" id="kgslat" name="kgslat" value="42.614689">
+  <label for="kgslong">longitude:</label>
+  <input type="number" id="kgslong" name="kgslong" value="-71.324092"><br><br>
+  
+  <label for="kgsacc">Radius / Accuracy:</label>
+  <input type="number" id="kgsacc" name="kgsacc" value="80">
+    <label for="kgsnote">Note:</label>
+  <input type="text" id="kgsnote" name="kgsnote" value="Known Place"><br><br>
+  <label for="circolor">Color:</label>
+  <input type="color" id="circolor" name="circolor" value="#00ff00"><br><br>
+  <input type="button" value="Add Circle" onclick="circle()">
+  <input type="button" value="Clear All" onclick="clearAll()">
+  <input type="button" value="View" onclick="changeView()">
+  <input type="button" value="My Location" onclick="getLocation()">
+</form>
+<table id="coords">
+<tr>
+<td>latitude</td>
+<td>longitude</td>
+<td>Accuracy</td>
+<td>Note</td>
+<td>ID</td>
+<td>Color</td>
+<td>Clear Row</td>
+<td>View Location</td>
+</tr>
+</table>
+</div>
 
-    <center>
-    <h1>Unofficial UKG Pro WFM - Known Places Configuration Assistant</h1>
-    </center>
-    <br>
-    <div id="map" class="map"></div>
-    <br>
-    <div id="coordinates" class="coordinates">Latitude: <span id="latitude"></span>, Longitude: <span id="longitude"></span></div>
-    <div>
-        <label for="radius">Radius (meters):</label>
-        <input type="number" id="radius" value="50" />
-        <button id="minus">-</button>
-        <button id="plus">+</button>
-    </div>
-    <div id="howto">
-        How To:
-        <ol>
-            <li>Enter an address in the search box above and press Enter</li>
-            <li>Set desired zoom level</li>
-            <li>Click middle of desired Known Place</li>
-            <li>Increase / Decrease Radius with + & - buttons</li>
-            <li>Utilize Latitude, Longitude & Raidus to program Known Place</li>
-        </ol>
-    </div>
-    <div>
-        <br>
-        <center>
-        PLEASE NOTE THIS IS AN UNOFFICIAL UKG PRODUCT AND IS NOT SUPPORTED OR MAINTAINED. PLEASE DO NOT CONTACT GLOBAL SUPPORT ABOUT THIS PRODUCT.
-            </center>
-    </br>
-    </div>
-    <script>
-        googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
 
-        openStreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        });
+<div id="map" class="map"</div>
+<script>
+//L.Control.geocoder().position(bottomright).addTo(newMap);
 
-        var newMap = L.map('map', {
-            center: [42.614689, -71.324092],
-            zoom: 15,
-            layers: [googleSat, openStreet]
-        });
 
-        var baseMaps = {
-            "Google Satellite": googleSat,
-            "Open Street Map": openStreet
-        };
 
-        var circle = null; // Variable to hold the circle layer
+ //new L.Control.Zoom({ position: 'topleft' }).addTo(map);
 
-        L.Control.geocoder({ position: 'topleft', collapsed: false, placeholder: "Enter an address..." }).on('markgeocode', function (e) {
-            var latlng = e.geocode.center;
-            var latitudeElement = document.getElementById("latitude");
-            var longitudeElement = document.getElementById("longitude");
-            latitudeElement.textContent = latlng.lat.toFixed(6);
-            longitudeElement.textContent = latlng.lng.toFixed(6);
-            drawCircle(latlng.lat, latlng.lng);
-        }).addTo(newMap);
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(showPosition);
+  } else { 
+    alert("Geolocation is not supported by this browser.");
+  }
+}
 
-        L.control.layers(baseMaps).addTo(newMap);
+function showPosition(position) {
+  //x.innerHTML = "longitude: " + position.coords.longitude +   "<br>latitude: " + position.coords.latitude;
+  document.getElementById("kgslat").value = position.coords.latitude;
+  document.getElementById("kgslong").value = position.coords.longitude;
+  document.getElementById("kgsacc").value = position.coords.accuracy;
+  document.getElementById("kgsnote").value = "My Location";
+  changeView();
+ 
+}
 
-        // Zoom control options
-        var zoomOptions = {
-            zoomInText: '+',
-            zoomOutText: '-',
-        };
+function importDV() {
+  //x.innerHTML = "longitude: " + position.coords.longitude +   "<br>latitude: " + position.coords.latitude;
+  var geodata = document.getElementById("DVgeo").value.replaceAll(" ","");
+  //alert("Geolocation Data: " + geodata);
+  const geoArray = geodata.split(",");
+  console.log(geoArray.length);
+  if(geoArray.length != 3){
+  alert("Formatting Error! Format should be: Latitude, Longitude, Accuracy. Ex: 42.614689, -71.324092, 30");
+  }
+  document.getElementById("kgslat").value = geoArray[0];
+  document.getElementById("kgslong").value = geoArray[1];
+  document.getElementById("kgsacc").value = geoArray[2];
+  //document.getElementById("kgsnote").value = "My Location";
+  changeView();
+ 
+}
 
-        // Creating Zoom control
-        var zoom = L.control.zoom(zoomOptions);
+function importDVQ() {
+  //x.innerHTML = "longitude: " + position.coords.longitude +   "<br>latitude: " + position.coords.latitude;
+  var geodata = document.getElementById("DVgeo").value.replaceAll(" ","");
+  //alert("Geolocation Data: " + geodata);
+  const geoArray = geodata.split(",");
+  console.log(geoArray.length);
+  if(geoArray.length != 3){
+  alert("Formatting Error! Format should be: Latitude, Longitude, Accuracy. Ex: 42.614689, -71.324092, 30");
+  }
+  document.getElementById("kgslat").value = geoArray[0];
+  document.getElementById("kgslong").value = geoArray[1];
+  document.getElementById("kgsacc").value = geoArray[2];
+  //document.getElementById("kgsnote").value = "My Location";
+  circle()
+ 
+}
+//var newMap = L.map('map').setView([42.614689,-71.324092], 13);
+googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+});
 
-        // Creating scale control
-        var scale = L.control.scale();
+openStreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+attribution: '&copy; <a href=”http://osm.org/copyright”>OpenStreetMap</a> contributors'
+});
 
-        // Adding scale control to the map
-        scale.addTo(newMap);
 
-        newMap.on('click', function (e) {
-            var latitudeElement = document.getElementById("latitude");
-            var longitudeElement = document.getElementById("longitude");
-            latitudeElement.textContent = e.latlng.lat.toFixed(6);
-            longitudeElement.textContent = e.latlng.lng.toFixed(6);
-            drawCircle(e.latlng.lat, e.latlng.lng);
-        });
+var group = L.featureGroup();
 
-        document.getElementById("minus").addEventListener("click", function () {
-            adjustRadius(-5);
-        });
+var newMap = L.map('map', {
+    center: [42.614689, -71.324092],
+    zoom: 15,
+    layers: [googleSat, openStreet]
+});
 
-        document.getElementById("plus").addEventListener("click", function () {
-            adjustRadius(5);
-        });
+var baseMaps = {
+    
+	"Google Satelite": googleSat,
+	"Open Street Map": openStreet
+    
+};
+L.Control.geocoder({ position: 'topleft' }).addTo(newMap);
 
-        function drawCircle(lat, lng) {
-            var radius = document.getElementById("radius").value;
-            if (!radius) {
-                return;
-            }
+var overlayMaps = {
+    "Circles": group
+};
 
-            if (circle) {
-                newMap.removeLayer(circle); // Remove the previous circle
-            }
+//L.control.layers(baseMaps, overlayMaps).addTo(newMap);
 
-            circle = L.circle([lat, lng], {
-                color: 'blue',
-                fillColor: 'blue',
-                fillOpacity: 0.2,
-                radius: radius
-            }).addTo(newMap);
-        }
+L.control.layers(baseMaps).addTo(newMap);
 
-        function adjustRadius(value) {
-            var radiusInput = document.getElementById("radius");
-            var newRadius = parseInt(radiusInput.value) + value;
-            if (newRadius >= 0) {
-                radiusInput.value = newRadius;
-                if (circle) {
-                    drawCircle(circle.getLatLng().lat, circle.getLatLng().lng);
-                }
-            }
-        }
-    </script>
+// zoom control options
+var zoomOptions = {
+   zoomInText: '+',
+   zoomOutText: '-',
+};
+// Creating zoom control
+var zoom = L.control.zoom(zoomOptions);
+
+// Creating scale control
+var scale = L.control.scale();
+// Adding scale control to the map
+scale.addTo(newMap);
+
+
+
+/*
+circle([42.614689,-71.324092], {
+		color: 'red',
+		fillColor: '#f03',
+		fillOpacity: 0.5,
+		radius: 12
+	}).addTo(newMap);
+*/
+/*
+	//Circle Looking for Mousedown function
+    circle.on({
+			//Mousedown on a circle
+          mousedown: function () {
+            newMap.on('mousemove', function (e) {
+              circle.setlongLng(e.longlng);
+            });
+          }
+       }); 
+       newMap.on('mouseup',function(e){
+         newMap.removeEventListener('mousemove');
+       })
+*/
+newMap.on('click', function(e) {
+    alert(e.latlng);
+} );
+	
+
+var group = L.featureGroup().addTo(newMap);
+/*
+	group.on("mouseover", function (e) {
+	var circle = e.circle
+	    circle.on({
+			//Mousedown on a circle
+          mousedown: function () {
+            newMap.on('mousemove', function (e) {
+              circle.setlongLng(e.longlng);
+            });
+          }
+       }); 
+       newMap.on('mouseup',function(e){
+         newMap.removeEventListener('mousemove');
+       })
+	});
+	*/
+	
+group.on("click", function (e) {
+	var clickedCircle = e.layer; // e.target is the group itself.
+
+	// do something, like:
+	clickedCircle.openPopup();
+});
+
+group.on("contextmenu", function (e) {
+	var clickedCircle = e.layer; // e.target is the group itself.
+
+	// do something, like:
+	//clickedCircle.remove();
+});
+
+
+group.on("mouseover", function (e) {
+	var clickedCircle = e.layer; // e.target is the group itself.
+
+	// do something, like:
+	//clickedCircle.bindTooltip("my tooltip text").openTooltip();
+	clickedCircle.openTooltip();
+});
+
+group.on("mouseout", function (e) {
+	var clickedCircle = e.layer; // e.target is the group itself.
+
+	// do something, like:
+	clickedCircle.closePopup();
+});
+
+function circle()
+{
+	var circolor = document.getElementById("circolor").value;
+	var circfill;
+	//alert(circolor);
+	var gpslat = document.getElementById("kgslat").value;
+	var gpslong = document.getElementById("kgslong").value;
+	var gpsacc = document.getElementById("kgsacc").value;
+	var gpsnote="";
+	try{
+	gpsnote = document.getElementById("kgsnote").value;}catch{};
+	
+	var workingCircle = L.circle([gpslat,gpslong], {
+		color: circolor,
+		fillColor: circolor,
+		fillOpacity: 0.2,
+		radius: gpsacc
+	}).bindPopup("latitude: "+gpslat+ + "\n" + " longitude: " + gpslong + " Accuracy: " + gpsacc).bindTooltip(gpsnote).addTo(group);
+	
+	//console.log(workingCircle._leaflet_id)
+	    
+
+	newMap.setView([gpslat,gpslong], 17);
+	
+	///alert(group.getLayers());
+	
+	addTable(gpslat,gpslong,gpsacc,gpsnote, workingCircle._leaflet_id, circolor);
+	
+}
+
+function changeView(){
+
+	var gpslat = document.getElementById("kgslat").value;
+	var gpslong = document.getElementById("kgslong").value;
+	var gpsacc = document.getElementById("kgsacc").value;
+	newMap.setView([gpslat,gpslong], 17);
+}
+
+function clearAll()
+{
+/*
+    document.getElementById("kgslat").value = "";
+	document.getElementById("kgslong").value = "";
+	document.getElementById("kgsacc").value = "";
+	*/
+	group.clearLayers();
+	document.getElementById("entryMenu").reset();
+	
+	//alert(document.getElementById("myTable").rows.length);
+    while(document.getElementById("coords").rows.length > 1){
+    document.getElementById("coords").deleteRow(-1)
+    }
+}
+
+function deleteRow(r) {
+  var i = r.parentNode.parentNode.rowIndex;
+  var lid = document.getElementById("coords").rows[i].cells[4].innerHTML;
+  
+  //alert( document.getElementById("coords").rows[i].cells[4].innerHTML);
+  group.removeLayer(lid);
+    document.getElementById("coords").deleteRow(i);
+}
+
+function getRow(r) {
+  var i = r.parentNode.parentNode.rowIndex;
+  alert( document.getElementById("coords").rows[i].innerHTML);
+  
+}
+
+function viewRow(r){
+
+	var i = r.parentNode.parentNode.rowIndex;
+	var gpslat = document.getElementById("coords").rows[i].cells[0].innerHTML;
+	var gpslong = document.getElementById("coords").rows[i].cells[1].innerHTML;
+	newMap.setView([gpslat,gpslong], 17);
+}
+
+
+function addTable(clat, clong, cacc, cnote, cid, circolor) {
+  var table = document.getElementById("coords");
+  var row = table.insertRow(1);
+  var cell1 = row.insertCell(0);
+  var cell2 = row.insertCell(1);
+  var cell3 = row.insertCell(2);
+  var cell4 = row.insertCell(3);
+  var cell5 = row.insertCell(4);
+  var cell6 = row.insertCell(5);
+  var cell7 = row.insertCell(6);
+  var cell8 = row.insertCell(7);
+  cell1.innerHTML = clat;
+  cell2.innerHTML = clong;
+  cell3.innerHTML = cacc;
+  cell4.innerHTML = cnote;
+  cell5.innerHTML = cid;
+  cell6.innerHTML = "<input type='color' value="+circolor+" disabled>";
+  cell7.innerHTML = "<button type='button' onclick='deleteRow(this)' >Delete</button>";
+  cell8.innerHTML = "<button type='button' onclick='viewRow(this)' >View Location</button>";
+
+}
+	
+</script>
 </body>
 </html>

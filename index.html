@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Known Places Configuration Assistant</title>
+    <title>Known Place Configuration Assistant</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
@@ -35,7 +35,7 @@ v1.0 - Initial Release
 -->
 
     <center>
-    <h1>Known Places Configuration Assistant</h1>
+    <h1>Known Place Configuration Assistant</h1>
     </center>
     <br>
     <div id="map" class="map"></div>
@@ -69,12 +69,11 @@ v1.0 - Initial Release
         var newMap = L.map('map', {
             center: [42.614689, -71.324092],
             zoom: 15,
-            layers: [googleSat, openStreet]
+            layers: [googleSat]
         });
 
         var baseMaps = {
-            "Google Satellite": googleSat,
-            "Open Street Map": openStreet
+            "Google Satellite": googleSat
         };
 
         var circle = null; // Variable to hold the circle layer
